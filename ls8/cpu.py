@@ -11,12 +11,12 @@ class CPU:
         self.ram = [0] * 256  # 256 bytes of memory
         self.reg = [0] * 8  # 8 general-purpose registers
         self.pc = 0
-        self.commands = {
-            0b00000001: self.hlt,
-            0b10000010: self.ldi,
-            0b01000111: self.prn,
-            0b10100010: self.mul
-        }
+
+    def ram_read(self, address):
+        return self.ram[address]
+
+    def ram_write(self, value, address):
+        self.ram[address] = value
 
     def load(self):
         """Load a program into memory."""
