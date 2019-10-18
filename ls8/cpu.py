@@ -3,44 +3,51 @@
 import sys
 import time
 
-LDI = 0b10000010
-PRN = 0b01000111
-HLT = 0b00000001
-MUL = 0b10100010
-PUSH = 0b01000101
-POP = 0b01000110
+# compare values in two registers
 CMP = 0b10100111
-JMP = 0b01010100
+# halt the CPU and exit the emulator.
+HLT = 0b00000001
+# if equal flag is set (true), jump to the address stored in the given register.
 JEQ = 0b01010101
+# jump to the address stored in the given register
+JMP = 0b01010100
+# If E flag is clear (false, 0), jump to the address stored in the given register.
 JNE = 0b01010110
+# load "immediate", store a value in a register, or "set this register to this value"
+LDI = 0b10000010
+# multiply the values in two registers together and store the result in registerA.
+MUL = 0b10100010
+# pop the value at the top of the stack into the given register
+POP = 0b01000110
+# a pseudo-instruction that prints the numeric value stored in a register
+PRN = 0b01000111
+# push the value in the given register on the stack
+PUSH = 0b01000101
 
 
 class CPU:
-    """Main CPU class."""
 
     def __init__(self):
-        """Construct a new CPU."""
-        self.pc = 0
-        self.reg = [0] * 8
-        self.reg[7] = 255  # R7 is reserved as the stack pointer (SP)
-        self.ram = [0] * 256
+        self.pc = 0  # program counter, address of the currently executing instruction
+        self.reg = [0] * 8  # 8 general-purpose 8-bit numeric registers R0-R7
+        self.reg[7] = 255  # 7 registers, reg[8] is the stack pointer
+        self.ram = [0] * 256  # 8-bit addressing or 256 bytes of RAM total
         self.fla = [0] * 8  # `FL` bits: `00000LGE`
-        self.hlt = False
+        self.hlt = False  # set half to false
 
         self.ops = {
-            LDI: self.op_ldi,
-            PRN: self.op_prn,
-            HLT: self.op_hlt,
-            MUL: self.op_mul,
-            PUSH: self.op_push,
-            POP: self.op_pop,
             CMP: self.op_cmp,
+            HLT: self.op_hlt,
             JMP: self.op_jmp,
             JEQ: self.op_jeq,
             JNE: self.op_jne
+            LDI: self.op_ldi,
+            MUL: self.op_mul,
+            POP: self.op_pop,
+            PRN: self.op_prn,
+            PUSH: self.op_push,
         }
 
-    # op functions
     def op_ldi(self, address, value):
         self.reg[address] = value
 
@@ -91,17 +98,15 @@ class CPU:
         else:
             self.pc += 2
 
-    # ram functions
-
+    # accept the address to read and return the value stored there
     def ram_read(self, address):
         return self.ram[address]
 
+    # accept a value to write, and the address to write it to
     def ram_write(self, value, address):
         self.ram[address] = value
 
     def load(self, filename):
-        """Load a program into memory."""
-
         address = 0
         with open(filename) as file:
             for line in file:
@@ -113,26 +118,11 @@ class CPU:
                     self.ram[address] = int(instruction[:8], 2)
                     address += 1
 
-        # For now, we've just hardcoded a program:
-        # program = [
-        #     # From print8.ls8
-        #     0b10000010, # LDI R0,8
-        #     0b00000000,
-        #     0b00001000,
-        #     0b01000111, # PRN R0
-        #     0b00000000,
-        #     0b00000001, # HLT
-        # ]
-
-        # for instruction in program:
-        #     self.ram[address] = instruction
-        #     address += 1
-
     def alu(self, op, reg_a, reg_b):
-        """ALU operations."""
-
         if op == "ADD":
+            # add the value in two registers and store the result in registerA.
             self.reg[reg_a] += self.reg[reg_b]
+            # multiply the values in two registers together and store the result in registerA.
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
         # elif op == "SUB": etc
@@ -140,15 +130,9 @@ class CPU:
             raise Exception("Unsupported ALU operation")
 
     def trace(self):
-        """
-        Handy function to print out the CPU state. You might want to call this
-        from run() if you need help debugging.
-        """
-
+        # Print out the CPU state. Call from run() if you need help debugging.
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            # self.fl,
-            # self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
             self.ram_read(self.pc + 2)
@@ -160,9 +144,9 @@ class CPU:
         print()
 
     def run(self):
-        """Run the CPU."""
+        # run loop while halt is False
         while self.hlt == False:
-            # time.sleep(1)
+            # set internal register to
             ir = self.ram[self.pc]
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
