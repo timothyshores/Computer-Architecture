@@ -59,8 +59,11 @@ but you'll have to implement those three above instructions first!
 
 ## Step 0: IMPORTANT: inventory what is here!
 
-* Make a list of files here.
-* Write a short 3-10-word description of what each file does.
+✅ Make a list of files here.
+* Write a short 3-10-word description of what each file does
+  * ls8 imports, initializes, loads and runs cpu file 
+  * cpu is a class with methods including load, alu, trace and run
+
 * Note what has been implemented, and what hasn't.
 * Read this whole file.
 * Skim the spec.

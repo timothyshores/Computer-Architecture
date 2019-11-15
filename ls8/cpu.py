@@ -1,55 +1,240 @@
-"""CPU functionality."""
-
 import sys
+import time
+
+# bitwise-AND the values in registerA and registerB, then store the result in registerA
+AND = 0b10101000
+# compare values in two registers
+CMP = 0b10100111
+# decrement (subtract 1 from) the value in the given register
+DEC = 0b01100110
+# divide the value in the first register by the value in second register, store quotient in registerA
+DIV = 0b10100011
+# halt the CPU and exit the emulator.
+HLT = 0b00000001
+# increment the value in the given register
+INC = 0b01100101
+# if equal flag is set (true), jump to the address stored in the given register
+JEQ = 0b01010101
+# jump to the address stored in the given register
+JMP = 0b01010100
+# If E flag is clear (false, 0), jump to the address stored in the given register
+JNE = 0b01010110
+# load "immediate", store a value in a register, or "set this register to this value"
+LDI = 0b10000010
+# multiply the values in two registers together and store the result in registerA
+MUL = 0b10100010
+# bitwise-NOT on the value in a register
+NOT = 0b01101001
+# bitwise-OR between the values in registerA and registerB, storing the result in registerA
+OR = 0b10101010
+# pop the value at the top of the stack into the given register
+POP = 0b01000110
+# a pseudo-instruction that prints the numeric value stored in a register
+PRN = 0b01000111
+# push the value in the given register on the stack
+PUSH = 0b01000101
+# subtract the value in the second register from the first and store the result in registerA
+SUB = 0b10100001
+#  bitwise-XOR between the values in registerA and registerB and store the result in registerA
+XOR = 0b10101011
+
 
 class CPU:
-    """Main CPU class."""
-
     def __init__(self):
-        """Construct a new CPU."""
-        pass
+        self.pc = 0  # program counter, address of the currently executing instruction
+        self.reg = [0] * 8  # 8 general-purpose 8-bit numeric registers R0-R7
+        self.reg[7] = 255  # 7 registers, reg[8] is the stack pointer
+        self.ram = [0] * 256  # 8-bit addressing or 256 bytes of RAM total
+        self.fla = [0] * 8  # `FL` bits: `00000LGE`
+        self.hlt = False  # set half to false
 
-    def load(self):
-        """Load a program into memory."""
+        self.ops = {
+            AND: self.op_and,  # decrement the value in the given register
+            DEC: self.op_dec,  # decrement the value in the given register
+            DIV: self.op_div,  # divide registerA by registerA, store quotient in registerA
+            CMP: self.op_cmp,  # compare values in two registers
+            HLT: self.op_hlt,  # halt CPU and exit emulator
+            INC: self.op_inc,  # increment the value in the given register
+            JMP: self.op_jmp,  # jump to address stored in given register
+            JEQ: self.op_jeq,  # if equal flag is true, jump to address in given register
+            JNE: self.op_jne,  # If equal flag is false, jump to address in given register
+            LDI: self.op_ldi,  # set the value of a register to an integer
+            MUL: self.op_mul,  # store result of two integers multiplcation in registerA
+            NOT: self.op_not,  # bitwise-NOT on the value in a register
+            OR: self.op_or,  # bitwise-OR between the values in registerA and registerB
+            POP: self.op_pop,  # pop value at the top of the stack into the given register
+            PRN: self.op_prn,  # print  value stored in the given register
+            PUSH: self.op_push,  # push  value in given register on the stack
+            SUB: self.op_sub,  # push  value in given register on the stack
+            XOR: self.op_xor,  # bitwise-XOR between the values in registerA and registerB
+        }
 
+    # set the value of a register to an integer
+    def op_ldi(self, address, value):
+        self.reg[address] = value
+
+    # print value stored in the given register
+    def op_prn(self, address, op_b):  # op a/b
+        print(self.reg[address])  # op_a acts as address
+
+    # halt the CPU
+    def op_hlt(self, op_a, op_b):
+        self.hlt = True
+
+    # Multiply the values in two registers together and store the result in registerA.
+    def op_mul(self, operand_a, operand_b):
+        self.alu('MUL', operand_a, operand_b)
+
+    # divide the value in the first register by the value in second register, store quotient in registerA
+    def op_div(self, operand_a, operand_b):
+        self.alu('DIV', operand_a, operand_b)
+
+    # increment the value in the given register
+    def op_inc(self, operand_a, operand_b):
+        self.alu('INC', operand_a, operand_b)
+
+    # subtract the value in the second register from the first, storing the difference in registerA
+    def op_sub(self, operand_a, operand_b):
+        self.alu('SUB', operand_a, operand_b)
+
+    # bitwise-XOR between the values in registerA and registerB, storing the result in registerA
+    def op_xor(self, operand_a, operand_b):
+        self.alu('XOR', operand_a, operand_b)
+
+    # bitwise-AND the values in registerA and registerB, then store the result in registerA
+    def op_and(self, operand_a, operand_b):
+        self.alu('AND', operand_a, operand_b)
+
+    # bitwise-OR the values in registerA and registerB, then store the result in registerA
+    def op_or(self, operand_a, operand_b):
+        self.alu('OR', operand_a, operand_b)
+
+    #  bitwise-NOT on the value in a register
+    def op_not(self, operand_a, operand_b):
+        self.alu('NOT', operand_a, operand_b)
+
+    # Push the value in the given register on the stack
+    def op_push(self, operand_a, operand_b):
+        self.reg[7] -= 1  # decrement stack pointer
+        sp = self.reg[7]  # sp variable
+        self.ram[sp] = self.reg[operand_a]
+
+    # pop the value at the top of the stack into the given register.
+    def op_pop(self, operand_a, operand_b):
+        sp = self.reg[7]  # sp variable
+        operand_b = self.ram[sp]
+        self.reg[operand_a] = operand_b
+
+    # jump to the address stored in the given register
+    def op_jmp(self, address, operand_b):
+        # set the PC to the address stored in the given register
+        self.pc = self.reg[address]
+
+    # compare  values in two registers
+    def op_cmp(self, operand_a, operand_b):
+        self.alu('CMP', operand_a, operand_b)
+
+    # decrement (subtract 1 from) the value in the given register.
+    def op_dec(self, operand_a, operand_b):
+        self.alu('DEC', operand_a, operand_b)
+
+    def op_jeq(self, operand_a, operand_b):
+        if self.fla[7] == 1:
+            self.op_jmp(operand_a, operand_b)
+        else:
+            self.pc += 2
+
+    def op_jne(self, operand_a, operand_b):
+        if self.fla[7] == 0:
+            self.op_jmp(operand_a, operand_b)
+        else:
+            self.pc += 2
+
+    # accept the address to read and return the value stored there
+    def ram_read(self, address):
+        return self.ram[address]
+
+    # accept a value to write, and the address to write it to
+    def ram_write(self, value, address):
+        self.ram[address] = value
+
+    def load(self, filename):
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
-
+        with open(filename) as file:
+            for line in file:
+                comment_split = line.split('#')  # used to ignore comments
+                instruction = comment_split[0]
+                if instruction == '':
+                    continue
+                elif (instruction[0] == '0') or (instruction[0] == '1'):
+                    self.ram[address] = int(instruction[:8], 2)
+                    address += 1
 
     def alu(self, op, reg_a, reg_b):
-        """ALU operations."""
-
+        # add the value in two registers and store the result in registerA.
         if op == "ADD":
+            # add the value in two registers and store the result in registerA.
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        # subtract the value in the second register from the first
+        elif op == "SUB":
+            # store the result in registerA
+            self.reg[reg_a] -= self.reg[reg_b]
+        # multiply the values in two registers together and store the result in registerA.
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+        # divide the value in the first register by the value in second register
+        elif op == "DIV":
+            # If  value in the second register is 0
+            if self.reg[reg_b] == 0:
+                # print an error message and halt
+                print("Unable to divide by 0")
+                raise Exception("Unable to divide by 0")
+            # storing the quotient in registerA
+            self.reg[reg_a] /= self.reg[reg_b]
+        # compare the values in two registers.
+        elif op == "CMP":
+            # registerA is less than registerB,
+            if self.reg[reg_a] < self.reg[reg_b]:
+                # set the Less-than L flag to 1
+                self.fla[5] = 1
+            # registerA is greater than registerB
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                # set the Greater-than G flag to 1
+                self.fla[6] = 1
+            # registerA and registerB are equal
+            elif self.reg[reg_a] == self.reg[reg_b]:
+                # set the Equal E flag to 1
+                self.fla[7] = 1
+            else:
+                print('Non-comparable values')
+        # decrement(subtract 1 from) the value in the given register
+        elif op == "DEC":
+            self.reg[reg_a] -= 1
+        # increment (add 1 to) the value in the given register
+        elif op == "INC":
+            self.reg[reg_a] += 1
+        # bitwise-XOR between the values in registerA and registerB
+        elif op == "XOR":
+            # store the result in registerA
+            self.reg[reg_a] = self.reg[reg_a] ^ self.reg[reg_b]
+        # bitwise-AND the values in registerA and registerB
+        elif op == "AND":
+            # store the result in registerA
+            self.reg[reg_a] = self.reg[reg_a] & self.reg[reg_b]
+        # bitwise-OR the values in registerA and registerB
+        elif op == "OR":
+            # store the result in registerA
+            self.reg[reg_a] = self.reg[reg_a] | self.reg[reg_b]
+        elif op == "NOT":
+            # store the result in registerA
+            self.reg[reg_a] = ~self.reg[reg_a]
         else:
             raise Exception("Unsupported ALU operation")
 
     def trace(self):
-        """
-        Handy function to print out the CPU state. You might want to call this
-        from run() if you need help debugging.
-        """
-
+        # Print out the CPU state. Call from run() if you need help debugging.
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
-            #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
             self.ram_read(self.pc + 2)
@@ -61,5 +246,18 @@ class CPU:
         print()
 
     def run(self):
-        """Run the CPU."""
-        pass
+        # run loop while halt is False
+        while self.hlt == False:
+            # set internal register to the program counter index of the 256 byte RAM list
+            ir = self.ram[self.pc]
+            # set operand_a to the next program counter index
+            operand_a = self.ram_read(self.pc + 1)
+            # set operand_b to the following program counter index after operand_a
+            operand_b = self.ram_read(self.pc + 2)
+            # set op_suze to internal register shifted 6 bits to the right
+            op_size = ir >> 6
+            ins_set = ((ir >> 4) & 0b1) == 1
+            if ir in self.ops:
+                self.ops[ir](operand_a, operand_b)
+            if not ins_set:
+                self.pc += op_size + 1
