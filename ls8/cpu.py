@@ -23,6 +23,8 @@ JNE = 0b01010110
 LDI = 0b10000010
 # multiply the values in two registers together and store the result in registerA
 MUL = 0b10100010
+# bitwise-OR between the values in registerA and registerB, storing the result in registerA
+OR = 0b10101010
 # pop the value at the top of the stack into the given register
 POP = 0b01000110
 # a pseudo-instruction that prints the numeric value stored in a register
@@ -56,6 +58,7 @@ class CPU:
             JNE: self.op_jne,  # If equal flag is false, jump to address in given register
             LDI: self.op_ldi,  # set the value of a register to an integer
             MUL: self.op_mul,  # store result of two integers multiplcation in registerA
+            OR: self.op_or,  # bitwise-OR between the values in registerA and registerB
             POP: self.op_pop,  # pop value at the top of the stack into the given register
             PRN: self.op_prn,  # print  value stored in the given register
             PUSH: self.op_push,  # push  value in given register on the stack
@@ -98,6 +101,10 @@ class CPU:
     # bitwise-AND the values in registerA and registerB, then store the result in registerA
     def op_and(self, operand_a, operand_b):
         self.alu('AND', operand_a, operand_b)
+
+    # bitwise-OR the values in registerA and registerB, then store the result in registerA
+    def op_or(self, operand_a, operand_b):
+        self.alu('OR', operand_a, operand_b)
 
     # Push the value in the given register on the stack
     def op_push(self, operand_a, operand_b):
@@ -207,6 +214,10 @@ class CPU:
         elif op == "AND":
             # store the result in registerA
             self.reg[reg_a] = self.reg[reg_a] & self.reg[reg_b]
+        # bitwise-OR the values in registerA and registerB
+        elif op == "OR":
+            # store the result in registerA
+            self.reg[reg_a] = self.reg[reg_a] | self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
