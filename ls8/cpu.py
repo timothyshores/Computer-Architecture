@@ -27,8 +27,10 @@ POP = 0b01000110
 PRN = 0b01000111
 # push the value in the given register on the stack
 PUSH = 0b01000101
-# subtract the value in the second register from the first, storing the result in registerA.
+# subtract the value in the second register from the first and store the result in registerA
 SUB = 0b10100001
+#  bitwise-XOR between the values in registerA and registerB and store the result in registerA
+XOR = 0b10101011
 
 
 class CPU:
@@ -55,6 +57,7 @@ class CPU:
             PRN: self.op_prn,  # print  value stored in the given register
             PUSH: self.op_push,  # push  value in given register on the stack
             SUB: self.op_sub,  # push  value in given register on the stack
+            XOR: self.op_xor,  # bitwise-XOR between the values in registerA and registerB
         }
 
     # set the value of a register to an integer
@@ -81,9 +84,13 @@ class CPU:
     def op_inc(self, operand_a, operand_b):
         self.alu('INC', operand_a, operand_b)
 
-    # increment the value in the given register
+    # subtract the value in the second register from the first, storing the difference in registerA
     def op_sub(self, operand_a, operand_b):
         self.alu('SUB', operand_a, operand_b)
+
+    # bitwise-XOR between the values in registerA and registerB, storing the result in registerA.
+    def op_xor(self, operand_a, operand_b):
+        self.alu('XOR', operand_a, operand_b)
 
     # Push the value in the given register on the stack
     def op_push(self, operand_a, operand_b):
@@ -183,6 +190,8 @@ class CPU:
             self.reg[reg_a] -= 1
         elif op == "INC":
             self.reg[reg_a] += 1
+        elif op == "XOR":
+            self.reg[reg_a] = self.reg[reg_a] ^ self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
