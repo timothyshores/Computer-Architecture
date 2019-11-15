@@ -1,6 +1,8 @@
 import sys
 import time
 
+# bitwise-AND the values in registerA and registerB, then store the result in registerA
+AND = 0b10101000
 # compare values in two registers
 CMP = 0b10100111
 # decrement (subtract 1 from) the value in the given register
@@ -43,6 +45,7 @@ class CPU:
         self.hlt = False  # set half to false
 
         self.ops = {
+            AND: self.op_and,  # decrement the value in the given register
             DEC: self.op_dec,  # decrement the value in the given register
             DIV: self.op_div,  # divide registerA by registerA, store quotient in registerA
             CMP: self.op_cmp,  # compare values in two registers
@@ -88,9 +91,13 @@ class CPU:
     def op_sub(self, operand_a, operand_b):
         self.alu('SUB', operand_a, operand_b)
 
-    # bitwise-XOR between the values in registerA and registerB, storing the result in registerA.
+    # bitwise-XOR between the values in registerA and registerB, storing the result in registerA
     def op_xor(self, operand_a, operand_b):
         self.alu('XOR', operand_a, operand_b)
+
+    # bitwise-AND the values in registerA and registerB, then store the result in registerA
+    def op_and(self, operand_a, operand_b):
+        self.alu('AND', operand_a, operand_b)
 
     # Push the value in the given register on the stack
     def op_push(self, operand_a, operand_b):
@@ -186,12 +193,20 @@ class CPU:
                 self.fla[7] = 1
             else:
                 print('Non-comparable values')
+        # decrement(subtract 1 from) the value in the given register
         elif op == "DEC":
             self.reg[reg_a] -= 1
+        # increment (add 1 to) the value in the given register
         elif op == "INC":
             self.reg[reg_a] += 1
+        # bitwise-XOR between the values in registerA and registerB
         elif op == "XOR":
+            # store the result in registerA
             self.reg[reg_a] = self.reg[reg_a] ^ self.reg[reg_b]
+        # bitwise-AND the values in registerA and registerB
+        elif op == "AND":
+            # store the result in registerA
+            self.reg[reg_a] = self.reg[reg_a] & self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
